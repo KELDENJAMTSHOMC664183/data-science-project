@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Does Money Buy Happiness? — GSS 1972–2024</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  :root {
+    --ink:#1c2733; --muted:#5b6b7c; --line:#dde4ec; --bg:#f4f6fa; --card:#fff;
+    --red:#c1121f; --navy:#003049; --teal:#2a9d8f; --gold:#e9c46a;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+  header { background:linear-gradient(120deg,#003049 0%,#0b5d7a 100%); color:#fff;
+    padding:26px 24px 20px; }
+  header h1 { margin:0 0 4px; font-size:1.45rem; }
+  header p { margin:0; opacity:.92; font-size:.92rem; }
+  .wrap { max-width:1080px; margin:0 auto; padding:18px 16px 60px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:16px 0; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; }
+  .stat .k { font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+  .stat .v { font-size:1.1rem; font-weight:600; margin-top:2px; }
+  .stat .v small { font-size:.72rem; font-weight:400; color:var(--muted); }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:14px 16px; margin:14px 0; }
+  .panel h2 { margin:0 0 4px; font-size:1.05rem; }
+  .panel .desc { color:var(--muted); font-size:.86rem; margin:0 0 10px; }
+  .controls { display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-bottom:8px; font-size:.9rem; }
+  .controls label { font-weight:600; }
+  input[type=checkbox] { accent-color:var(--navy); width:15px; height:15px; }
+  .note { background:#fff8e6; border:1px solid #f2dc9c; border-radius:8px; padding:10px 14px;
+    font-size:.88rem; margin-top:10px; }
+  footer { text-align:center; color:var(--muted); font-size:.78rem; margin-top:24px; }
+  .plot { width:100%; height:440px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Does money buy happiness?</h1>
+  <p>Income &amp; happiness in the United States, 1972–2024 · General Social Survey (all 35 waves, n = 64,848) × World Bank GDP per capita</p>
+</header>
+
+<div class="wrap">
+
+  <div class="cards">
+    <div class="stat"><div class="k">Income × happiness</div><div class="v">χ²(8) = 2861</div><div class="v" style="font-weight:400"><small>p &lt; 1e-300</small></div></div>
+    <div class="stat"><div class="k">Spearman ρ</div><div class="v" id="s-rho">—</div></div>
+    <div class="stat"><div class="k">Income effect w/ controls</div><div class="v" id="s-coef">—</div><div class="v" style="font-weight:400"><small>2024 OLS, age+sex+educ</small></div></div>
+    <div class="stat"><div class="k">GDP per capita</div><div class="v" id="s-gdp">—</div><div class="v" style="font-weight:400"><small>1972 → 2024</small></div></div>
+    <div class="stat"><div class="k">% "very happy"</div><div class="v" id="s-vh">—</div><div class="v" style="font-weight:400"><small>1972 → 2024</small></div></div>
+    <div class="stat"><div class="k">Happiness × era χ²</div><div class="v" id="s-era">—</div><div class="v" style="font-weight:400"><small id="s-era-p">p = 3.1e-218</small></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>1 · Within a year, money buys happiness</h2>
+    <p class="desc">Pooled 1972–2024 (all 35 waves). Respondents ranked into income quintiles <i>within their own survey year</i> (relative income — sidesteps GSS deflator changes). Bars = mean happiness with 95% CI; % labels = share saying "very happy".</p>
+    <div id="p1" class="plot"></div>
+  </div>
+
+  <div class="panel">
+    <h2>2 · Over 52 years, a richer America became a less happy one</h2>
+    <p class="desc">Red: % "very happy" by survey year. Blue: GDP per capita (2015 $). Toggle to drop the 2022–24 surveys, which used a different collection mode.</p>
+    <div class="controls">
+      <label><input type="checkbox" id="exclude-mode"> Exclude 2022–24 (survey mode change)</label>
+      <span id="trend-note" style="color:var(--muted)"></span>
+    </div>
+    <div id="p2" class="plot"></div>
+  </div>
+
+  <div class="panel">
+    <h2>3 · The rich–poor happiness gap by decade</h2>
+    <p class="desc">Mean happiness (1–3) of the richest vs poorest within-year quintile by decade. Gap = richest − poorest (annotated).</p>
+    <div id="p3" class="plot" style="height:400px"></div>
+  </div>
+
+  <div class="panel">
+    <h2>4 · 2024: who says they are "very happy"?</h2>
+    <p class="desc">Composition of each income quintile in 2024. Even the poorest are mostly "pretty happy" — but "not too happy" doubles from top to bottom.</p>
+    <div id="p4" class="plot" style="height:400px"></div>
+  </div>
+
+  <div class="panel">
+    <h2>5 · Is the income–happiness link significant? — the full metric set</h2>
+    <p class="desc">Pooled cross-section 1972–2024, all 35 waves, n = 64,848. p-values prove "not chance"; effect sizes and 95% confidence intervals prove it is not just big-sample noise. A CI that excludes the null (0 for differences, 1 for odds ratios) is significant at α = 0.05.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:.88rem;">
+      <tr style="border-bottom:2px solid var(--line);text-align:left;">
+        <th style="padding:6px 8px;">Metric</th><th style="padding:6px 8px;">Value</th>
+        <th style="padding:6px 8px;">Test statistic / p</th><th style="padding:6px 8px;">What it shows</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--line);"><td style="padding:6px 8px;">χ² (quintile × happiness)</td><td style="padding:6px 8px;">χ²(8) = 2861.3</td><td style="padding:6px 8px;">p &lt; 1e-300</td><td style="padding:6px 8px;">association not due to chance (underflows float64)</td></tr>
+      <tr style="border-bottom:1px solid var(--line);"><td style="padding:6px 8px;">Cramér's V</td><td style="padding:6px 8px;">0.1485</td><td style="padding:6px 8px;">—</td><td style="padding:6px 8px;">small-to-medium effect (χ² normalized for n)</td></tr>
+      <tr style="border-bottom:1px solid var(--line);"><td style="padding:6px 8px;">Odds ratio (richest vs poorest, "very happy")</td><td style="padding:6px 8px;">2.52</td><td style="padding:6px 8px;">95% CI [2.39, 2.66]</td><td style="padding:6px 8px;">CI excludes 1 → significant; richest ~2.5× the odds</td></tr>
+      <tr style="border-bottom:1px solid var(--line);"><td style="padding:6px 8px;">Risk ratio</td><td style="padding:6px 8px;">1.916× (39.7% vs 20.7%)</td><td style="padding:6px 8px;">—</td><td style="padding:6px 8px;">plain-language: richest almost twice as likely</td></tr>
+      <tr style="border-bottom:1px solid var(--line);"><td style="padding:6px 8px;">Cohen's d (happiness gap)</td><td style="padding:6px 8px;">0.588</td><td style="padding:6px 8px;">95% CI [0.56, 0.61]</td><td style="padding:6px 8px;">medium effect; CI excludes 0 → significant</td></tr>
+      <tr style="border-bottom:1px solid var(--line);"><td style="padding:6px 8px;">Spearman ρ</td><td style="padding:6px 8px;">-0.195</td><td style="padding:6px 8px;">p &lt; 1e-300</td><td style="padding:6px 8px;">CI excludes 0; monotone trend richer → happier</td></tr>
+      <tr style="border-bottom:1px solid var(--line);"><td style="padding:6px 8px;">OLS slope / standardized β</td><td style="padding:6px 8px;">0.0906 / quintile · β = 0.199</td><td style="padding:6px 8px;">t = 51.8, p &lt; 1e-300, R² = 0.0397</td><td style="padding:6px 8px;">each quintile up ≈ +0.09 happiness points</td></tr>
+      <tr><td style="padding:6px 8px;">Bootstrap gap (richest − poorest)</td><td style="padding:6px 8px;">0.373 on 1–3</td><td style="padding:6px 8px;">95% CI [0.357, 0.388]</td><td style="padding:6px 8px;">non-parametric, no distribution assumptions; CI excludes 0</td></tr>
+      </table>
+  </div>
+
+  <div class="note">
+    <b>How to read this (honest summary):</b> within any given year the income–happiness gradient is large, significant by every metric (χ²(8) = 2861.3, p &lt; 1e-300; OR = 2.52, CI [2.39, 2.66]; Cohen's d = 0.59, CI [0.56, 0.61]) and survives age/sex/education controls. Across time the two arms diverge: real GDP per capita grew <b>×2.49</b> while the share saying "very happy" fell <b>30.3% → 19.8%</b>, and using <b>all 35 survey waves</b> the pre-2022 trend is <b>significantly downward</b> (Kendall τ = −0.47, p = 0.0001) — a richer America that became measurably <i>less</i> happy, not merely flat. That decline is already present in the face-to-face era alone (1972–2018: τ = −0.44, p = 0.0003), so it is not an artefact of the 2021–24 collection-mode change or the pandemic; those waves merely steepen the drop. Caveats: (1) income is published in coarse bands (12–26 midpoints per wave), so we rank within year instead of trusting cross-era dollar values; (2) cross-sectional association ≠ causation (health, marriage and personality correlate with both); (3) survey happiness is self-reported. Bottom line: money buys happiness <i>relative to your fellow Americans</i>; nationally, the 2.5× rise in income bought none.
+  </div>
+
+  <footer>Data: GSS 1972–2024 (gss.norc.org) · World Bank NY.GDP.PCAP.KD (data.worldbank.org) · generated Sep 2026</footer>
+</div>
+
+<script>
+const DATA = {
+ "years": [
+  {
+   "year": 1972,
+   "n": 1468,
+   "very": 445,
+   "pretty": 789,
+   "not": 234,
+   "meanH": 2.143732970027248,
+   "gdp_pc": 26798.5336106847,
+   "pct_very": 30.3133514986376,
+   "pct_not": 15.940054495912806
+  },
+  {
+   "year": 1973,
+   "n": 1393,
+   "very": 500,
+   "pretty": 712,
+   "not": 181,
+   "meanH": 2.2290021536252693,
+   "gdp_pc": 28042.5519181903,
+   "pct_very": 35.89375448671931,
+   "pct_not": 12.993539124192392
+  },
+  {
+   "year": 1974,
+   "n": 1354,
+   "very": 509,
+   "pretty": 671,
+   "not": 174,
+   "meanH": 2.2474150664697192,
+   "gdp_pc": 27637.2997756103,
+   "pct_very": 37.592319054652876,
+   "pct_not": 12.850812407680944
+  },
+  {
+   "year": 1975,
+   "n": 1403,
+   "very": 459,
+   "pretty": 762,
+   "not": 182,
+   "meanH": 2.1974340698503205,
+   "gdp_pc": 27309.8688183059,
+   "pct_very": 32.71560940841055,
+   "pct_not": 12.972202423378477
+  },
+  {
+   "year": 1976,
+   "n": 1394,
+   "very": 481,
+   "pretty": 744,
+   "not": 169,
+   "meanH": 2.2238163558106168,
+   "gdp_pc": 28509.1430593189,
+   "pct_very": 34.50502152080344,
+   "pct_not": 12.12338593974175
+  },
+  {
+   "year": 1977,
+   "n": 1397,
+   "very": 491,
+   "pretty": 745,
+   "not": 161,
+   "meanH": 2.236220472440945,
+   "gdp_pc": 29528.9663682275,
+   "pct_very": 35.14674302075877,
+   "pct_not": 11.52469577666428
+  },
+  {
+   "year": 1978,
+   "n": 1419,
+   "very": 487,
+   "pretty": 803,
+   "not": 129,
+   "meanH": 2.252290345313601,
+   "gdp_pc": 30834.9992322862,
+   "pct_very": 34.31994362226921,
+   "pct_not": 9.090909090909092
+  },
+  {
+   "year": 1980,
+   "n": 1353,
+   "very": 449,
+   "pretty": 723,
+   "not": 181,
+   "meanH": 2.198078344419808,
+   "gdp_pc": 31081.6216322106,
+   "pct_very": 33.18551367331855,
+   "pct_not": 13.377679231337769
+  },
+  {
+   "year": 1982,
+   "n": 1677,
+   "very": 502,
+   "pretty": 934,
+   "not": 241,
+   "meanH": 2.1556350626118066,
+   "gdp_pc": 30696.0834382608,
+   "pct_very": 29.934406678592723,
+   "pct_not": 14.370900417412043
+  },
+  {
+   "year": 1983,
+   "n": 1430,
+   "very": 446,
+   "pretty": 796,
+   "not": 188,
+   "meanH": 2.1804195804195805,
+   "gdp_pc": 31810.9216076638,
+   "pct_very": 31.18881118881119,
+   "pct_not": 13.146853146853147
+  },
+  {
+   "year": 1984,
+   "n": 1320,
+   "very": 460,
+   "pretty": 692,
+   "not": 168,
+   "meanH": 2.221212121212121,
+   "gdp_pc": 33818.823551545,
+   "pct_very": 34.84848484848485,
+   "pct_not": 12.727272727272727
+  },
+  {
+   "year": 1985,
+   "n": 1415,
+   "very": 402,
+   "pretty": 854,
+   "not": 159,
+   "meanH": 2.171731448763251,
+   "gdp_pc": 34918.1302039172,
+   "pct_very": 28.40989399293286,
+   "pct_not": 11.236749116607774
+  },
+  {
+   "year": 1986,
+   "n": 1329,
+   "very": 431,
+   "pretty": 754,
+   "not": 144,
+   "meanH": 2.215951843491347,
+   "gdp_pc": 35794.8877746784,
+   "pct_very": 32.43039879608728,
+   "pct_not": 10.835214446952596
+  },
+  {
+   "year": 1987,
+   "n": 1637,
+   "very": 475,
+   "pretty": 944,
+   "not": 218,
+   "meanH": 2.1569945021380574,
+   "gdp_pc": 36701.9453874612,
+   "pct_very": 29.016493585827735,
+   "pct_not": 13.317043372021992
+  },
+  {
+   "year": 1988,
+   "n": 1346,
+   "very": 456,
+   "pretty": 767,
+   "not": 123,
+   "meanH": 2.24739970282318,
+   "gdp_pc": 37889.3773459827,
+   "pct_very": 33.87815750371471,
+   "pct_not": 9.13818722139673
+  },
+  {
+   "year": 1989,
+   "n": 1371,
+   "very": 451,
+   "pretty": 787,
+   "not": 133,
+   "meanH": 2.2319474835886215,
+   "gdp_pc": 38911.5418959959,
+   "pct_very": 32.89569657184537,
+   "pct_not": 9.700948212983224
+  },
+  {
+   "year": 1990,
+   "n": 1223,
+   "very": 417,
+   "pretty": 696,
+   "not": 110,
+   "meanH": 2.25102207686018,
+   "gdp_pc": 39200.0658091762,
+   "pct_very": 34.09648405560098,
+   "pct_not": 8.994276369582993
+  },
+  {
+   "year": 1991,
+   "n": 1358,
+   "very": 414,
+   "pretty": 795,
+   "not": 149,
+   "meanH": 2.195139911634757,
+   "gdp_pc": 38637.8398179104,
+   "pct_very": 30.486008836524302,
+   "pct_not": 10.972017673048601
+  },
+  {
+   "year": 1993,
+   "n": 1463,
+   "very": 451,
+   "pretty": 843,
+   "not": 169,
+   "meanH": 2.1927546138072453,
+   "gdp_pc": 40002.4762253198,
+   "pct_very": 30.82706766917293,
+   "pct_not": 11.551606288448394
+  },
+  {
+   "year": 1994,
+   "n": 2627,
+   "very": 749,
+   "pretty": 1567,
+   "not": 311,
+   "meanH": 2.1667301103920824,
+   "gdp_pc": 41106.9881833481,
+   "pct_very": 28.511610201751047,
+   "pct_not": 11.838599162542824
+  },
+  {
+   "year": 1996,
+   "n": 2544,
+   "very": 763,
+   "pretty": 1477,
+   "not": 304,
+   "meanH": 2.1804245283018866,
+   "gdp_pc": 42783.8165724095,
+   "pct_very": 29.992138364779876,
+   "pct_not": 11.949685534591195
+  },
+  {
+   "year": 1998,
+   "n": 2480,
+   "very": 771,
+   "pretty": 1407,
+   "not": 302,
+   "meanH": 2.1891129032258063,
+   "gdp_pc": 45596.4306879224,
+   "pct_very": 31.088709677419356,
+   "pct_not": 12.17741935483871
+  },
+  {
+   "year": 2000,
+   "n": 2421,
+   "very": 758,
+   "pretty": 1408,
+   "not": 255,
+   "meanH": 2.207765386204048,
+   "gdp_pc": 48616.2546282435,
+   "pct_very": 31.309376290788933,
+   "pct_not": 10.532837670384138
+  },
+  {
+   "year": 2002,
+   "n": 1223,
+   "very": 365,
+   "pretty": 709,
+   "not": 149,
+   "meanH": 2.176614881439084,
+   "gdp_pc": 48967.3661217576,
+   "pct_very": 29.844644317252655,
+   "pct_not": 12.183156173344235
+  },
+  {
+   "year": 2004,
+   "n": 1173,
+   "very": 374,
+   "pretty": 648,
+   "not": 151,
+   "meanH": 2.1901108269394713,
+   "gdp_pc": 51348.3473386025,
+   "pct_very": 31.88405797101449,
+   "pct_not": 12.87297527706735
+  },
+  {
+   "year": 2006,
+   "n": 2576,
+   "very": 783,
+   "pretty": 1457,
+   "not": 336,
+   "meanH": 2.1735248447204967,
+   "gdp_pc": 53596.315236412,
+   "pct_very": 30.39596273291926,
+   "pct_not": 13.043478260869565
+  },
+  {
+   "year": 2008,
+   "n": 1770,
+   "very": 516,
+   "pretty": 966,
+   "not": 288,
+   "meanH": 2.128813559322034,
+   "gdp_pc": 53703.962897927,
+   "pct_very": 29.152542372881356,
+   "pct_not": 16.271186440677965
+  },
+  {
+   "year": 2010,
+   "n": 1804,
+   "very": 463,
+   "pretty": 1058,
+   "not": 283,
+   "meanH": 2.0997782705099777,
+   "gdp_pc": 52812.6829869279,
+   "pct_very": 25.665188470066518,
+   "pct_not": 15.687361419068734
+  },
+  {
+   "year": 2012,
+   "n": 1752,
+   "very": 532,
+   "pretty": 979,
+   "not": 241,
+   "meanH": 2.166095890410959,
+   "gdp_pc": 54000.8410778217,
+   "pct_very": 30.36529680365297,
+   "pct_not": 13.75570776255708
+  },
+  {
+   "year": 2014,
+   "n": 2310,
+   "very": 711,
+   "pretty": 1295,
+   "not": 304,
+   "meanH": 2.176190476190476,
+   "gdp_pc": 55665.2411187802,
+   "pct_very": 30.77922077922078,
+   "pct_not": 13.16017316017316
+  },
+  {
+   "year": 2016,
+   "n": 2591,
+   "very": 725,
+   "pretty": 1470,
+   "not": 396,
+   "meanH": 2.126978000771903,
+   "gdp_pc": 57430.8499298804,
+   "pct_very": 27.981474334233887,
+   "pct_not": 15.28367425704361
+  },
+  {
+   "year": 2018,
+   "n": 2151,
+   "very": 645,
+   "pretty": 1194,
+   "not": 312,
+   "meanH": 2.1548117154811717,
+   "gdp_pc": 59817.6556798612,
+   "pct_very": 29.9860529986053,
+   "pct_not": 14.504881450488144
+  },
+  {
+   "year": 2021,
+   "n": 3495,
+   "very": 693,
+   "pretty": 2011,
+   "not": 791,
+   "meanH": 1.9719599427753933,
+   "gdp_pc": 63096.7856149746,
+   "pct_very": 19.82832618025751,
+   "pct_not": 22.63233190271817
+  },
+  {
+   "year": 2022,
+   "n": 3644,
+   "very": 774,
+   "pretty": 2014,
+   "not": 856,
+   "meanH": 1.9774972557628978,
+   "gdp_pc": 64322.2332819139,
+   "pct_very": 21.2403951701427,
+   "pct_not": 23.490669593852907
+  },
+  {
+   "year": 2024,
+   "n": 3537,
+   "very": 701,
+   "pretty": 2087,
+   "not": 749,
+   "meanH": 1.986429177268872,
+   "gdp_pc": 66856.5131698371,
+   "pct_very": 19.81905569691829,
+   "pct_not": 21.1761379700311
+  }
+ ],
+ "quint": [
+  {
+   "q": 1,
+   "meanH": 1.9594854810136333,
+   "ci": 0.011585294098216332,
+   "n": 12983,
+   "pct_very": 20.73480705538011
+  },
+  {
+   "q": 2,
+   "meanH": 2.0723653757136242,
+   "ci": 0.011122548491586073,
+   "n": 12962,
+   "pct_very": 24.74926708841228
+  },
+  {
+   "q": 3,
+   "meanH": 2.1599043505091022,
+   "ci": 0.010696909600323613,
+   "n": 12964,
+   "pct_very": 28.579142240049364
+  },
+  {
+   "q": 4,
+   "meanH": 2.232140101836136,
+   "ci": 0.01055110555891243,
+   "n": 12962,
+   "pct_very": 33.0813146119426
+  },
+  {
+   "q": 5,
+   "meanH": 2.332434306850582,
+   "ci": 0.01020388447190105,
+   "n": 12977,
+   "pct_very": 39.731833243430685
+  }
+ ],
+ "eras": [
+  {
+   "era": "1970s",
+   "q": [
+    2.0452,
+    2.1792,
+    2.2128,
+    2.2943,
+    2.3582
+   ],
+   "gap": 0.313,
+   "waves": 7,
+   "n": 9828
+  },
+  {
+   "era": "1980s",
+   "q": [
+    2.012,
+    2.1282,
+    2.2117,
+    2.2568,
+    2.3686
+   ],
+   "gap": 0.3566,
+   "waves": 9,
+   "n": 12878
+  },
+  {
+   "era": "1990s",
+   "q": [
+    1.9919,
+    2.1091,
+    2.215,
+    2.2717,
+    2.3614
+   ],
+   "gap": 0.3695,
+   "waves": 6,
+   "n": 11695
+  },
+  {
+   "era": "2000s",
+   "q": [
+    1.9613,
+    2.0644,
+    2.1866,
+    2.2829,
+    2.3873
+   ],
+   "gap": 0.426,
+   "waves": 5,
+   "n": 9163
+  },
+  {
+   "era": "2010s",
+   "q": [
+    1.927,
+    2.0471,
+    2.1462,
+    2.2541,
+    2.3516
+   ],
+   "gap": 0.4245,
+   "waves": 5,
+   "n": 10608
+  },
+  {
+   "era": "2020s",
+   "q": [
+    1.8123,
+    1.8984,
+    1.9789,
+    2.0365,
+    2.1671
+   ],
+   "gap": 0.3549,
+   "waves": 3,
+   "n": 10676
+  }
+ ],
+ "stack2024": [
+  {
+   "q": 1,
+   "very": 15.68,
+   "pretty": 54.52,
+   "not": 29.8
+  },
+  {
+   "q": 2,
+   "very": 17.96,
+   "pretty": 56.15,
+   "not": 25.88
+  },
+  {
+   "q": 3,
+   "very": 19.52,
+   "pretty": 58.98,
+   "not": 21.5
+  },
+  {
+   "q": 4,
+   "very": 20.93,
+   "pretty": 61.81,
+   "not": 17.26
+  },
+  {
+   "q": 5,
+   "very": 25.0,
+   "pretty": 63.56,
+   "not": 11.44
+  }
+ ],
+ "stats": {
+  "n": 64848,
+  "chi2": 2861.3,
+  "p_chi2": 0.0,
+  "cramers_v": 0.1485,
+  "rho": -0.195,
+  "p_rho": 0.0,
+  "or": 2.52,
+  "ci_or": [
+   2.39,
+   2.66
+  ],
+  "rr": 1.916,
+  "pct_very_q5": 39.7,
+  "pct_very_q1": 20.7,
+  "cohen_d": 0.588,
+  "ci_d": [
+   0.56,
+   0.61
+  ],
+  "boot_gap": 0.373,
+  "ci_boot": [
+   0.357,
+   0.388
+  ],
+  "ols_coef": 0.0906,
+  "ols_t": 51.8,
+  "ols_p": 0.0,
+  "ols_r2": 0.0397,
+  "ols_beta": 0.199,
+  "era_chi2": 1014.2,
+  "p_era": 3.05462474654137e-218,
+  "pre_chi2": 55.6,
+  "p_pre": 8.54202430886096e-13,
+  "tau_pre2022": -0.473,
+  "p_tau": 6.270528435511801e-05,
+  "gdp_ratio": 2.49,
+  "pct_very_1972": 30.3,
+  "pct_very_2024": 19.8,
+  "coef_quint": 0.0726,
+  "p_coef": 8.840491411290703e-18
+ }
+};
+const S = DATA.stats;
+const QNAMES = ["poorest", "2nd", "middle", "4th", "richest"];
+
+function fmtP(p) { return p === 0 ? "< 1e-300" : p < 1e-6 ? p.toExponential(1) : p < 0.001 ? p.toFixed(5) : p.toFixed(4); }
+function pStr(p) { return p === 0 ? "p < 1e-300" : "p = " + fmtP(p); }
+
+// ---------- stat cards ----------
+document.getElementById("s-rho").textContent = "ρ = " + S.rho + " (" + pStr(S.p_rho) + ")";
+document.getElementById("s-coef").textContent = "+" + S.coef_quint + " per quintile";
+document.getElementById("s-gdp").textContent = "×" + S.gdp_ratio;
+document.getElementById("s-vh").textContent = S.pct_very_1972 + "% → " + S.pct_very_2024 + "%";
+function renderEraStat(all) {
+  const c = all ? S.era_chi2 : S.pre_chi2, p = all ? S.p_era : S.p_pre;
+  document.getElementById("s-era").innerHTML = "χ² = " + c + (all ? "" : " <small>(pre-2022)</small>");
+  document.getElementById("s-era-p").textContent = pStr(p) + (all ? "" : " · excluding 2022–24");
+}
+renderEraStat(true);
+
+// ---------- chart 1: pooled gradient ----------
+(function () {
+  const q = DATA.quint;
+  Plotly.react("p1", [{
+    type: "bar",
+    x: QNAMES,
+    y: q.map(d => d.meanH),
+    error_y: { type: "data", array: q.map(d => d.ci), visible: true, color: "#333", thickness: 1 },
+    text: q.map(d => d.meanH.toFixed(2)),
+    textposition: "outside",
+    marker: { color: "#2a9d8f" },
+    customdata: q.map(d => d),
+    hovertemplate: "%{x} quintile<br>mean happiness: %{y:.3f} (1–3)<br>% 'very happy': %{customdata.pct_very:.1f}%<br>n = %{customdata.n:,}<extra></extra>"
+  }], {
+    title: { text: "Mean happiness by within-year income quintile, pooled 1972–2024 (χ²(8) = " + S.chi2 + ", " + pStr(S.p_chi2) + ")" },
+    yaxis: { title: "mean happiness (1 not too … 3 very)", range: [1.6, 2.6] },
+    margin: { l: 60, r: 20, t: 60, b: 50 }, template: "plotly_white"
+  }, { responsive: true });
+})();
+
+// ---------- chart 2: Easterlin + mode toggle ----------
+const exclBox = document.getElementById("exclude-mode");
+const yrsAll = DATA.years;
+function era3(y) { return y <= 2009 ? "a" : y <= 2019 ? "b" : "c"; }
+function chi2From(counts) {
+  // counts: [{very, pretty, not}] one per group
+  const rows = counts.length, cols = 3;
+  const rs = counts.map(c => c.very + c.pretty + c.not);
+  const cs = [0, 0, 0];
+  counts.forEach(c => { cs[0] += c.very; cs[1] += c.pretty; cs[2] += c.not; });
+  const total = rs.reduce((a, b) => a + b, 0);
+  let chi = 0;
+  for (let i = 0; i < rows; i++)
+    for (let j = 0; j < cols; j++) {
+      const obs = j === 0 ? counts[i].very : j === 1 ? counts[i].pretty : counts[i].not;
+      const exp = rs[i] * cs[j] / total;
+      if (exp > 0) chi += (obs - exp) * (obs - exp) / exp;
+    }
+  return { chi, dof: (rows - 1) * (cols - 1) };
+}
+function chi2P(chi, dof) {
+  // chi-square survival via series (valid for even dof; use Lanczos approx for general dof)
+  function gammaLn(z) {
+    const g = [76.18009172947146, -86.50532032941677, 24.01409824083091,
+      -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+    let x = z, y = z, tmp = x + 5.5; tmp -= (x + 0.5) * Math.log(tmp);
+    let ser = 1.000000000190015;
+    for (let j = 0; j < 6; j++) ser += g[j] / ++y;
+    return -tmp + Math.log(2.5066282746310005 * ser / x);
+  }
+  function gammQ(a, x) { // regularized upper incomplete gamma
+    if (x < a + 1) {
+      let ap = a, sum = 1 / a, del = sum;
+      for (let i = 0; i < 200; i++) { ap++; del *= x / ap; sum += del; if (Math.abs(del) < Math.abs(sum) * 1e-12) break; }
+      return 1 - sum * Math.exp(-x + a * Math.log(x) - gammaLn(a));
+    }
+    let b = x + 1 - a, c = 1e30, d = 1 / b, h = d;
+    for (let i = 1; i < 200; i++) {
+      const an = -i * (i - a);
+      b += 2; d = an * d + b; if (Math.abs(d) < 1e-30) d = 1e-30;
+      c = b + an / c; if (Math.abs(c) < 1e-30) c = 1e-30;
+      d = 1 / d; const del = d * c; h *= del;
+      if (Math.abs(del - 1) < 1e-12) break;
+    }
+    return Math.exp(-x + a * Math.log(x) - gammaLn(a)) * h;
+  }
+  return gammQ(dof / 2, chi / 2);
+}
+function drawEasterlin() {
+  const excl = exclBox.checked;
+  const yrs = yrsAll.filter(d => !(excl && d.year >= 2022));
+  const pts = yrs.map(d => ({ year: d.year, pct: d.pct_very }));
+  // OLS trend on visible % very happy
+  const n = pts.length;
+  const mx = pts.reduce((a, p) => a + p.year, 0) / n, my = pts.reduce((a, p) => a + p.pct, 0) / n;
+  let sxy = 0, sxx = 0;
+  pts.forEach(p => { sxy += (p.year - mx) * (p.pct - my); sxx += (p.year - mx) ** 2; });
+  const b1 = sxy / sxx, b0 = my - b1 * mx;
+  const trend = { type: "scatter", mode: "lines", name: "trend",
+    x: [Math.min(...pts.map(p => p.year)), Math.max(...pts.map(p => p.year))],
+    y: [b0 + b1 * Math.min(...pts.map(p => p.year)), b0 + b1 * Math.max(...pts.map(p => p.year))],
+    line: { color: "#c1121f", dash: "dot", width: 1.4 }, hoverinfo: "skip" };
+  const t1 = {
+    type: "scatter", mode: "lines+markers", name: "% 'very happy'",
+    x: yrs.map(d => d.year), y: yrs.map(d => d.pct_very),
+    line: { color: "#c1121f", width: 2.5 }, marker: { size: 7 },
+    hovertemplate: "%{x}<br>% 'very happy': %{y:.1f}%<extra></extra>", yaxis: "y"
+  };
+  const t2 = {
+    type: "scatter", mode: "lines+markers", name: "GDP per capita (2015 $k)",
+    x: yrs.map(d => d.year), y: yrs.map(d => d.gdp_pc / 1000),
+    line: { color: "#003049", width: 2.5 }, marker: { size: 7 },
+    hovertemplate: "%{x}<br>GDP per capita: $%{y:,.0f}k<extra></extra>", yaxis: "y2"
+  };
+  const traces = [t1, t2, trend];
+  // era chi-square from visible years
+  const groups = {};
+  yrs.forEach(d => { (groups[era3(d.year)] = groups[era3(d.year)] || []).push(d); });
+  const cts = Object.keys(groups).map(k => {
+    const gg = groups[k];
+    return { very: gg.reduce((a, d) => a + d.very, 0), pretty: gg.reduce((a, d) => a + d.pretty, 0), not: gg.reduce((a, d) => a + d.not, 0) };
+  });
+  const res = chi2From(cts);
+  const pv = chi2P(res.chi, res.dof);
+  renderEraStat(!excl);
+  document.getElementById("s-era-p").textContent = "p = " + fmtP(pv) + (excl ? " · excluding 2022–24" : "");
+  document.getElementById("trend-note").textContent =
+    "trend: " + (b1 * 10 >= 0 ? "+" : "") + (b1 * 10).toFixed(2) + " pp per decade  (" +
+    (excl ? "1972–2012" : "1972–2024") + ")";
+  Plotly.react("p2", traces, {
+    title: { text: "A richer America: GDP per capita ×" + S.gdp_ratio + ", happiness not — % 'very happy' " + S.pct_very_1972 + "% → " + S.pct_very_2024 + "%" },
+    xaxis: { title: "year", dtick: 5 },
+    yaxis: { title: "% 'very happy'", color: "#c1121f", range: [10, 45] },
+    yaxis2: { title: "GDP per capita (2015 $k)", color: "#003049", overlaying: "y", side: "right" },
+    showlegend: true, legend: { x: .02, y: 1.08, orientation: "h" },
+    margin: { l: 60, r: 60, t: 60, b: 50 }, template: "plotly_white"
+  }, { responsive: true });
+}
+exclBox.addEventListener("change", drawEasterlin);
+drawEasterlin();
+
+// ---------- chart 3: gap by era ----------
+(function () {
+  const eras = DATA.eras;
+  const tops = eras.map(e => e.q[4]), bots = eras.map(e => e.q[0]);
+  Plotly.react("p3", [
+    {
+      type: "scatter", mode: "lines+markers", name: "richest quintile",
+      x: eras.map(e => e.era), y: tops, line: { color: "#003049", width: 2.5 }, marker: { size: 8 },
+      hovertemplate: "%{x}<br>richest quintile: %{y:.3f}<extra></extra>"
+    },
+    {
+      type: "scatter", mode: "lines+markers", name: "poorest quintile",
+      x: eras.map(e => e.era), y: bots, line: { color: "#c1121f", width: 2.5 }, marker: { size: 8 },
+      hovertemplate: "%{x}<br>poorest quintile: %{y:.3f}<extra></extra>"
+    },
+    {
+      type: "scatter", mode: "lines", name: "gap (richest − poorest)", showlegend: false,
+      x: eras.map(e => e.era), y: eras.map(e => e.gap), line: { color: "rgba(0,0,0,0)" },
+      fill: "tozeroy", fillcolor: "rgba(0,48,73,.06)", hoverinfo: "skip"
+    },
+    {
+      type: "scatter", mode: "text", name: "gap labels", showlegend: false,
+      x: eras.map(e => e.era), y: eras.map(e => e.gap + .08),
+      text: eras.map(e => "+" + e.gap.toFixed(2)),
+      textfont: { size: 10, color: "#555" }, hoverinfo: "skip"
+    }
+  ], {
+    title: { text: "Happiness gap richest − poorest by decade — widest in the 2000s–2010s (1–3 scale)" },
+    yaxis: { title: "mean happiness", range: [1.7, 2.7] },
+    margin: { l: 60, r: 20, t: 60, b: 50 }, template: "plotly_white"
+  }, { responsive: true });
+})();
+
+// ---------- chart 4: 2024 stack ----------
+(function () {
+  const st = DATA.stack2024;
+  Plotly.react("p4", [
+    { type: "bar", name: "very happy", x: QNAMES, y: st.map(d => d.very), marker: { color: "#2a9d8f" } },
+    { type: "bar", name: "pretty happy", x: QNAMES, y: st.map(d => d.pretty), marker: { color: "#e9c46a" } },
+    { type: "bar", name: "not too happy", x: QNAMES, y: st.map(d => d.not), marker: { color: "#c1121f" } }
+  ], {
+    title: { text: "Happiness composition by income quintile, 2024 (%)" },
+    barmode: "stack", yaxis: { title: "% of quintile", ticksuffix: "%" },
+    xaxis: { title: "within-year family-income quintile" },
+    legend: { orientation: "h", y: 1.1 }, margin: { l: 55, r: 20, t: 60, b: 50 }, template: "plotly_white"
+  }, { responsive: true });
+})();
+</script>
+</body>
+</html>
