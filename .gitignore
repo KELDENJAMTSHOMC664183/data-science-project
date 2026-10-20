@@ -1,1 +1,33 @@
 .DS_Store
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+# Virtual Environments (venv, virtualenv, conda)
+venv/
+.venv/
+env/
+.env
+*.venv
+
+# uv (cache directory)
+.uv/
+
+# Python cache & build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS / System metadata
+.DS_Store
+Thumbs.db
+
+# Large Data files / Raw data (optional but recommended for data science)
+# *.csv
+# *.parquet
+# *.zip
+# data/raw/
